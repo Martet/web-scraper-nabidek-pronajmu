@@ -67,12 +67,12 @@ class ScraperUlovDomov(ScraperBase):
             "banner_panel_width_type": 480,
             "bounds": {
                 "north_east": {
-                    "lat": 49.294485,
-                    "lng": 16.727853
+                    "lat": 49.870533,
+                    "lng": 18.32931
                 },
                 "south_west": {
-                    "lat": 49.109655,
-                    "lng": 16.428068
+                    "lat": 49.788856,
+                    "lng": 18.172747
                 }
             },
             "conveniences": [],

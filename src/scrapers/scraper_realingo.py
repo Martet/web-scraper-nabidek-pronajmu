@@ -39,7 +39,7 @@ class ScraperRealingo(ScraperBase):
             "variables": {
                 "purpose": "RENT",
                 "property": "FLAT",
-                "address": "Brno",
+                "address": "Ostrava",
                 "saved": False,
                 "categories": self.get_dispositions_data(),
                 "sort": "NEWEST",
