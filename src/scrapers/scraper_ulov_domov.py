@@ -80,7 +80,7 @@ class ScraperUlovDomov(ScraperBase):
             "furnishing": [],
             "is_price_commision_free": None,
             "limit": 20,
-            "offer_type_id": None,
+            "offer_type_id": 2,
             "page": 1,
             "price_from": "",
             "price_to": "",

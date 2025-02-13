@@ -40,7 +40,7 @@ class ScraperEuroBydleni(ScraperBase):
         request_data = {
             "sql[advert_type_eu][]": 7,
             "sql[advert_subtype_eu][]": self.get_dispositions_data(),
-            "sql[advert_function_eu][]": 3,
+            "sql[advert_function_eu][]": 2,
             "sql[advert_price_min]": "",
             "sql[advert_price_max]": "",
             "sql[usable_area_min]": "",

@@ -21,7 +21,7 @@ class ScraperBezrealitky(ScraperBase):
     file: ClassVar[str] = "./graphql/bezrealitky.json"
 
     API: ClassVar[str] = "https://api.bezrealitky.cz/"
-    OFFER_TYPE: ClassVar[str] = "PRONAJEM"
+    OFFER_TYPE: ClassVar[str] = "PRODEJ"
     ESTATE_TYPE: ClassVar[str] = "BYT"
     BRNO: ClassVar[str] = "R437354"
 
