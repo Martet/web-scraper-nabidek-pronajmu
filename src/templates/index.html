@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+
+<style>
+    body {
+        font-family: sans-serif;
+        max-width: 800px;
+        margin: auto;
+    }
+
+    .offer {
+        border: 1px solid #ccc;
+        border-radius: 10px;
+        margin: 15px;
+        max-height: 250px;
+        display: flex;
+        justify-content: space-between;
+        transition: transform 0.2s;
+    }
+
+    .offer img {
+        max-width: 300px;
+        height: auto;
+        border-radius: inherit;
+    }
+
+    .offer:hover {
+        transform: scale(1.02);
+    }
+
+    #offers a {
+        text-decoration: none;
+        color: inherit;
+    }
+
+    #new-divider {
+        margin: 20px 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        color: #bd2150;
+        font-weight: 500;
+        font-size: 0.9em;
+    }
+
+    #new-divider::before, #new-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 3px dashed #bd2150;
+    }
+</style>
+
+</head>
+
+<body>
+
+<div id="offers">
+
+{% for offer in offers %}
+{% include "offer.html" %}
+{% endfor %}
+
+</div>
+
+{% include "loader.html" %}
+
+<script>
+    const ws = new WebSocket(`ws://${location.host}/ws`);
+    const offers = document.getElementById("offers");
+    let updateTimestamp = Date.now();
+    
+    ws.onmessage = (event) => {
+        if (Date.now() - updateTimestamp > 1000) {
+            updateTimestamp = Date.now();
+            document.getElementById("new-divider")?.remove();
+            offers.insertAdjacentHTML(
+                "afterbegin", 
+                `<div id="new-divider">${new Date().toLocaleTimeString([], { hour12: false })}</div>`
+            );
+        }
+        offers.insertAdjacentHTML("afterbegin", event.data);
+    }
+</script>
+
+</body>
+</html>

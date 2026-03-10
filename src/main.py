@@ -11,6 +11,7 @@ from discord_logger import DiscordLogger
 from offers_storage import OffersStorage
 from scrapers.rental_offer import RentalOffer
 from scrapers_manager import create_scrapers, fetch_latest_offers
+from web_ui import create_web_ui, broadcast_offer
 from datetime import datetime
 import asyncio
 
@@ -22,14 +23,14 @@ daytime = get_current_daytime()
 interval_time = config.refresh_interval_daytime_minutes if daytime else config.refresh_interval_nighttime_minutes
 
 scrapers = create_scrapers(config.dispositions)
+storage = OffersStorage(config.found_offers_file)
 
 @client.event
 async def on_ready():
-    global channel, storage
+    global channel
 
     dev_channel = client.get_channel(config.discord.dev_channel)
     channel = client.get_channel(config.discord.offers_channel)
-    storage = OffersStorage(config.found_offers_file)
 
     if not config.debug:
         discord_error_logger = DiscordLogger(client, dev_channel, logging.ERROR)
@@ -49,15 +50,17 @@ async def process_latest_offers():
 
     new_offers: list[RentalOffer] = []
     for offer in fetch_latest_offers(scrapers):
-        if not storage.contains(offer):
+        if not storage.contains(offer) and (int(offer.price.split('/')[0].strip()) if type(offer.price) is str else int(offer.price)) <= 18000:
             new_offers.append(offer)
+            if config.web_ui:
+                await broadcast_offer(offer)
 
     first_time = storage.first_time
     storage.save_offers(new_offers)
 
     logging.info("Offers fetched (new: {})".format(len(new_offers)))
 
-    if not first_time:
+    if not first_time and not config.web_ui:
         def chunk_offers(offers, size):
             for i in range(0, len(offers), size):
                 yield offers[i:i + size]
@@ -81,7 +84,7 @@ async def process_latest_offers():
 
             await retry_until_successful_send(channel, embeds)
             await asyncio.sleep(1.5)
-    else:
+    elif first_time:
         logging.info("No previous offers, first fetch is running silently")
 
     global daytime, interval_time
@@ -94,7 +97,8 @@ async def process_latest_offers():
         logging.info("Fetching latest offers every {} minutes".format(interval_time))
         process_latest_offers.change_interval(minutes=interval_time)
 
-    await retry_until_successful_edit(channel, f"Last update <t:{int(time())}:R>")
+    if not config.web_ui:
+        await retry_until_successful_edit(channel, f"Last update <t:{int(time())}:R>")
 
 
 async def retry_until_successful_send(channel: discord.TextChannel, embeds: list[discord.Embed], delay: float = 5.0):
@@ -130,6 +134,15 @@ async def retry_until_successful_edit(channel: discord.TextChannel, topic: str, 
             raise e
         await asyncio.sleep(delay)
 
+
+async def start_processing():
+    web_ui = create_web_ui()
+    import uvicorn
+    config = uvicorn.Config(web_ui, host="0.0.0.0", port=8000, log_level="info")
+    server = uvicorn.Server(config)
+    await asyncio.gather(server.serve(), process_latest_offers.start())
+
+
 if __name__ == "__main__":
     logging.basicConfig(
         level=(logging.DEBUG if config.debug else logging.INFO),
@@ -138,4 +151,10 @@ if __name__ == "__main__":
 
     logging.debug("Running in debug mode")
 
-    client.run(config.discord.token, log_level=logging.INFO)
+    if config.discord.token:
+        logging.info("Starting Discord client")
+        client.run(config.discord.token, log_level=logging.INFO)
+    
+    if config.web_ui:
+        asyncio.run(start_processing())
+        

@@ -41,6 +41,7 @@ class Config:
     refresh_interval_nighttime_minutes: int = environ.var(converter=int)
     dispositions: Disposition = environ.var(converter=dispositions_converter)
     embed_batch_size: int = environ.var(converter=int, default=10)
+    web_ui: bool = environ.bool_var(default=False)
 
     @environ.config()
     class Discord:
