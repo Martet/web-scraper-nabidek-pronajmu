@@ -2,6 +2,7 @@
 <html>
 <head>
 
+<link id="favicon" rel="icon" type="image/x-icon" href="https://cdn.betterttv.net/emote/652a9c2ea1072c9ec8e3ef65/2x.webp">
 <script src="https://unpkg.com/htmx.org@1.9.12"></script>
 
 <style>
@@ -28,7 +29,7 @@
     }
 
     .offer:hover {
-        transform: scale(1.02);
+        transform: scale(1.01);
     }
 
     #offers a {
@@ -37,7 +38,7 @@
     }
 
     #new-divider {
-        margin: 20px 15px;
+        margin: 15px;
         display: flex;
         align-items: center;
         gap: 12px;
@@ -50,6 +51,10 @@
         content: "";
         flex: 1;
         border-bottom: 3px dashed #bd2150;
+    }
+
+    #scroll-loader {
+        height: 1px;
     }
 </style>
 
@@ -65,7 +70,13 @@
 
 </div>
 
-{% include "loader.html" %}
+<div
+    id="scroll-loader"
+    hx-get="/offers?before={{offers[-1].link|urlencode}}"
+    hx-trigger="intersect"
+    hx-target="#offers"
+    hx-swap="beforeend">
+</div>
 
 <script>
     const ws = new WebSocket(`ws://${location.host}/ws`);
@@ -83,6 +94,25 @@
         }
         offers.insertAdjacentHTML("afterbegin", event.data);
     }
+
+    document.body.addEventListener("htmx:afterSwap", (evt) => {
+        if (evt.target.id !== "offers")
+            return;
+        const offers = document.querySelectorAll(".offer");
+        if (offers.length === 0)
+            return;
+        const last = offers[offers.length - 1];
+        const loader = document.getElementById("scroll-loader");
+        loader.setAttribute(
+            "hx-get",
+            "/offers?before=" + encodeURIComponent(last.id.replace("offer-", ""))
+        );
+        if (evt.detail.xhr.responseText.trim() === "") {
+            loader.remove();
+        } else {
+            htmx.process(loader);
+        }
+    })
 </script>
 
 </body>

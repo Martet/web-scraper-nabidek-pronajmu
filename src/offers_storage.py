@@ -1,4 +1,4 @@
-import json
+import csv
 
 from scrapers.rental_offer import RentalOffer
 
@@ -18,7 +18,8 @@ class OffersStorage:
 
         try:
             with open(self.path) as file:
-                self._offers = [RentalOffer.from_json(offer) for offer in json.load(file)]
+                for offer in csv.reader(file):
+                    self._offers.append(RentalOffer(*offer, scraper=None))
         except FileNotFoundError:
             self.first_time = True
 
@@ -41,10 +42,18 @@ class OffersStorage:
         Args:
             offers (list[RentalOffer]): Nalezené nabídky
         """
-        self._offers = offers + self._offers
+        self._offers.extend(offers)
         
-        with open(self.path, 'w') as file_object:
-            json.dump([offer.to_json() for offer in self._offers], file_object)
+        with open(self.path, 'a', newline='') as file_object:
+            writer = csv.writer(file_object)
+            for offer in offers:
+                writer.writerow([
+                    offer.link,
+                    offer.title,
+                    offer.location,
+                    offer.price,
+                    offer.image_url
+                ])
 
         self.first_time = False
 
@@ -59,4 +68,20 @@ class OffersStorage:
         Returns:
             list[RentalOffer]: Nabídky z úložiště
         """
-        return list(self._offers)[offset:offset + limit]
+        return self._offers[::-1][offset:offset + limit]
+
+
+    def get_index(self, offer_link: str) -> int | None:
+        """Získat index nabídky v úložišti podle odkazu
+
+        Args:
+            offer_link (str): Odkaz na nabídku
+
+        Returns:
+            int | None: Index nabídky v úložišti, nebo None pokud se nenachází
+        """
+        for i, offer in enumerate(self._offers[::-1]):
+            if offer.link == offer_link:
+                return i
+        
+        return None

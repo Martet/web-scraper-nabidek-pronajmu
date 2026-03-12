@@ -2,15 +2,11 @@ from fastapi import FastAPI, Request, WebSocket
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
-from config import config
-from offers_storage import OffersStorage
-
 templates = Jinja2Templates(directory="src/templates")
 clients: set[WebSocket] = set()
 
-def create_web_ui() -> FastAPI:
+def create_web_ui(storage) -> FastAPI:
     app = FastAPI()
-    storage = OffersStorage(config.found_offers_file)
 
     @app.get("/", response_class=HTMLResponse)
     def index(request: Request):
@@ -23,14 +19,20 @@ def create_web_ui() -> FastAPI:
             },
         )
 
-    @app.get("/offers")
-    def get_offers(limit: int = 25, offset: int = 0):
-        slice_ = storage.get_offers(limit, offset)
+    @app.get("/offers", response_class=HTMLResponse)
+    def get_offers(before: str | None = None):
+        if before:
+            idx = storage.get_index(before)
+            if idx is None:
+                return ""
+            start = idx + 1
+        else:
+            start = 0
 
+        slice_ = storage.get_offers(25, start)
         html = ""
         for o in slice_:
             html += templates.get_template("offer.html").render(offer=o)
-        html += templates.get_template("loader.html").render(offset=offset + limit)
 
         return HTMLResponse(html)
 

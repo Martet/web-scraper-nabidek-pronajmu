@@ -15,7 +15,7 @@ from web_ui import create_web_ui, broadcast_offer
 from datetime import datetime
 import asyncio
 
-def get_current_daytime() -> bool: return datetime.now().hour in range(6, 22)
+def get_current_daytime() -> bool: return datetime.now().hour in range(8, 24)
 
 
 client = discord.Client(intents=discord.Intents.default())
@@ -136,7 +136,7 @@ async def retry_until_successful_edit(channel: discord.TextChannel, topic: str, 
 
 
 async def start_processing():
-    web_ui = create_web_ui()
+    web_ui = create_web_ui(storage)
     import uvicorn
     config = uvicorn.Config(web_ui, host="0.0.0.0", port=8000, log_level="info")
     server = uvicorn.Server(config)
