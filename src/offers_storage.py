@@ -1,4 +1,6 @@
+import datetime as dt
 import csv
+import time
 
 from scrapers.rental_offer import RentalOffer
 
@@ -19,7 +21,20 @@ class OffersStorage:
         try:
             with open(self.path) as file:
                 for offer in csv.reader(file):
-                    self._offers.append(RentalOffer(*offer, scraper=None))
+                    try:
+                        timestamp = dt.datetime.fromisoformat(offer[-1])
+                    except:
+                        timestamp = dt.datetime.min
+                    if len(offer) < 5:
+                        continue
+                    self._offers.append(RentalOffer(
+                        link=offer[0],
+                        title=offer[1],
+                        location=offer[2],
+                        price=offer[3],
+                        image_url=offer[4],
+                        timestamp=timestamp
+                    ))
         except FileNotFoundError:
             self.first_time = True
 
@@ -47,13 +62,9 @@ class OffersStorage:
         with open(self.path, 'a', newline='') as file_object:
             writer = csv.writer(file_object)
             for offer in offers:
-                writer.writerow([
-                    offer.link,
-                    offer.title,
-                    offer.location,
-                    offer.price,
-                    offer.image_url
-                ])
+                fields = list(offer.__dict__.values())[:-1]
+                fields[-1] = offer.timestamp.isoformat()
+                writer.writerow(fields)
 
         self.first_time = False
 

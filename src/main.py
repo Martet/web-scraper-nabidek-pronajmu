@@ -49,8 +49,13 @@ async def process_latest_offers():
     logging.info("Fetching offers")
 
     new_offers: list[RentalOffer] = []
+    seen = 0
     for offer in fetch_latest_offers(scrapers):
-        if not storage.contains(offer) and (int(offer.price.split('/')[0].strip()) if type(offer.price) is str else int(offer.price)) <= 18000:
+        if storage.contains(offer):
+            seen += 1
+            continue
+
+        if (int(offer.price.split('/')[0].strip()) if type(offer.price) is str else int(offer.price)) <= 18000:
             new_offers.append(offer)
             if config.web_ui:
                 await broadcast_offer(offer)
@@ -58,7 +63,7 @@ async def process_latest_offers():
     first_time = storage.first_time
     storage.save_offers(new_offers)
 
-    logging.info("Offers fetched (new: {})".format(len(new_offers)))
+    logging.info("Offers fetched (new: {}, seen: {})".format(len(new_offers), seen))
 
     if not first_time and not config.web_ui:
         def chunk_offers(offers, size):

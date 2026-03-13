@@ -1,10 +1,12 @@
-<a href="{{offer.link}}" target="_blank">
-<div class="offer" id="offer-{{offer.link}}">
-    <div style="padding: 10px;">
-        <b>{{offer.title}}</b><br>
-        {{offer.location}}<br><br>
-        <b>{{offer.price}} Kč</b>
+<div hx-swap-oob="{{target}}:#offers">
+    <div class="offer" id="offer-{{offer.link}}" timestamp="{{offer.timestamp.isoformat()}}">
+        <a href="{{offer.link}}" target="_blank">
+            <div style="padding: 10px;">
+                <b>{{offer.title}}</b><br>
+                {{offer.location}}<br><br>
+                <b>{{offer.price}} Kč</b>
+            </div>
+            <img src="{{offer.image_url}}" alt="Image"> 
+        </a>
     </div>
-    <img src="{{offer.image_url}}" alt="Image"> 
 </div>
-</a>

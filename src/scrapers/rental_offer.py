@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
+import datetime as dt
 
 @dataclass
 class RentalOffer:
@@ -20,7 +21,10 @@ class RentalOffer:
     image_url: str
     """Náhledový obrázek nabídky"""
 
-    scraper: 'ScraperBase'
+    timestamp: dt.datetime = field(default_factory=dt.datetime.now)
+    """Datum a čas, kdy byla nabídka nalezena"""
+
+    scraper: 'ScraperBase' = field(default=None)
     """Odkaz na instanci srapera, ze kterého tato nabídka pochází"""
 
     def __eq__(self, other):

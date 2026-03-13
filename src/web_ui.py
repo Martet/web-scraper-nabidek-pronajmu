@@ -15,7 +15,7 @@ def create_web_ui(storage) -> FastAPI:
             {
                 "request": request,
                 "offers": storage.get_offers(),
-                "offset": 25
+                "target": "beforeend"
             },
         )
 
@@ -32,7 +32,7 @@ def create_web_ui(storage) -> FastAPI:
         slice_ = storage.get_offers(25, start)
         html = ""
         for o in slice_:
-            html += templates.get_template("offer.html").render(offer=o)
+            html += templates.get_template("offer.html").render(offer=o, target="beforeend")
 
         return HTMLResponse(html)
 
@@ -56,9 +56,7 @@ async def broadcast_offer(offer):
 
     for ws in clients:
         try:
-            await ws.send_text(
-                templates.get_template("offer.html").render(offer=offer, new=True)
-            )
+            await ws.send_text(templates.get_template("offer.html").render(offer=offer, target="afterbegin"))
         except:
             dead.append(ws)
 

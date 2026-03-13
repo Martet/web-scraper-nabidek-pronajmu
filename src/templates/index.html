@@ -3,7 +3,8 @@
 <head>
 
 <link id="favicon" rel="icon" type="image/x-icon" href="https://cdn.betterttv.net/emote/652a9c2ea1072c9ec8e3ef65/2x.webp">
-<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js" integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/htmx-ext-ws@2.0.4" integrity="sha384-1RwI/nvUSrMRuNj7hX1+27J8XDdCoSLf0EjEyF69nacuWyiJYoQ/j39RT1mSnd2G" crossorigin="anonymous"></script>
 
 <style>
     body {
@@ -17,40 +18,47 @@
         border-radius: 10px;
         margin: 15px;
         max-height: 250px;
+        transition: transform 0.2s;
+    }
+
+    .offer > a {
         display: flex;
         justify-content: space-between;
-        transition: transform 0.2s;
+        text-decoration: none;
+        color: inherit;
     }
 
     .offer img {
         max-width: 300px;
-        height: auto;
-        border-radius: inherit;
+        border-radius: 0 10px 10px 0;
     }
 
     .offer:hover {
         transform: scale(1.01);
     }
 
-    #offers a {
-        text-decoration: none;
-        color: inherit;
-    }
-
-    #new-divider {
+    .offer-divider {
         margin: 15px;
         display: flex;
         align-items: center;
         gap: 12px;
-        color: #bd2150;
-        font-weight: 500;
         font-size: 0.9em;
+        color: #888;
+    }
+    
+    .offer-divider::before, .offer-divider::after {
+        content: "";
+        flex: 1;
+        border-bottom: 2px dotted #888;
     }
 
     #new-divider::before, #new-divider::after {
-        content: "";
-        flex: 1;
         border-bottom: 3px dashed #bd2150;
+    }
+
+    #new-divider {
+        color: #bd2150;
+        font-weight: 500;
     }
 
     #scroll-loader {
@@ -62,42 +70,49 @@
 
 <body>
 
-<div id="offers">
-
-{% for offer in offers %}
-{% include "offer.html" %}
-{% endfor %}
-
+<div hx-ext="ws" ws-connect="/ws">
+    <div id="offers">
+        {% for offer in offers %}
+        {% include "offer.html" %}
+        {% endfor %}
+    </div>
 </div>
 
 <div
     id="scroll-loader"
     hx-get="/offers?before={{offers[-1].link|urlencode}}"
-    hx-trigger="intersect"
-    hx-target="#offers"
-    hx-swap="beforeend">
+    hx-trigger="intersect">
 </div>
 
 <script>
-    const ws = new WebSocket(`ws://${location.host}/ws`);
+    const GROUP_INTERVAL = 5000;
     const offers = document.getElementById("offers");
     let updateTimestamp = Date.now();
+    let lastOffer = null;
     
-    ws.onmessage = (event) => {
-        if (Date.now() - updateTimestamp > 1000) {
+    document.body.addEventListener("htmx:wsBeforeMessage", (evt) => {
+        lastOffer = offers.children[0];
+    });
+
+    document.body.addEventListener("htmx:wsAfterMessage", (evt) => {
+        if (Date.now() - updateTimestamp > GROUP_INTERVAL) {
+            if (lastOffer === offers.children[0]) {
+                return;
+            }
+
             updateTimestamp = Date.now();
-            document.getElementById("new-divider")?.remove();
-            offers.insertAdjacentHTML(
-                "afterbegin", 
-                `<div id="new-divider">${new Date().toLocaleTimeString([], { hour12: false })}</div>`
+            const newDivider = document.getElementById("new-divider");
+            if (newDivider) {
+                newDivider.id = "";
+            }
+            lastOffer.insertAdjacentHTML(
+                "beforebegin", 
+                `<div id="new-divider" class="offer-divider">${new Date().toLocaleTimeString([], { hour12: false })}</div>`
             );
         }
-        offers.insertAdjacentHTML("afterbegin", event.data);
-    }
+    });
 
     document.body.addEventListener("htmx:afterSwap", (evt) => {
-        if (evt.target.id !== "offers")
-            return;
         const offers = document.querySelectorAll(".offer");
         if (offers.length === 0)
             return;
@@ -112,7 +127,27 @@
         } else {
             htmx.process(loader);
         }
-    })
+
+        document.querySelectorAll(".offer-divider").forEach(div => div.remove());
+        generateDividers();
+    });
+
+    document.addEventListener("DOMContentLoaded", generateDividers);
+
+    function generateDividers() {
+        const offers = document.querySelectorAll(".offer");
+        let lastBatchTime = new Date(offers[0].getAttribute("timestamp"));
+        for (const offer of offers) {
+            const timestamp = new Date(offer.getAttribute("timestamp"));
+            if (lastBatchTime - timestamp.getTime() > GROUP_INTERVAL) {
+                offer.insertAdjacentHTML(
+                    "beforebegin", 
+                    `<div class="offer-divider">${new Date(lastBatchTime).toLocaleTimeString([], { hour12: false })}</div>`
+                );
+                lastBatchTime = timestamp.getTime();
+            }
+        } 
+    }
 </script>
 
 </body>
